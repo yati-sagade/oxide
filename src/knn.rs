@@ -1,4 +1,5 @@
 use super::util::{Counter,squared_distance};
+use super::core::Classifier;
 use std::hash::Hash;
 
 /// A K-Nearest Neighbours classifier.
@@ -8,23 +9,28 @@ pub struct KNNClassifier<T> {
     labels: Option<Vec<T>>,
 }
 
-impl<T: Hash + Eq + Clone> KNNClassifier<T> {
+impl<T> KNNClassifier<T> where T: Hash + Eq + Clone {
     /// Construct a new KNNClassifier.
     pub fn new(k: usize) -> KNNClassifier<T> {
         KNNClassifier::<T>{ k: k, data: None, labels: None }
     }
-    
+}
+
+impl<T> Classifier for KNNClassifier<T> where T: Hash + Eq + Clone {
+    type ExampleType = Vec<f64>;
+    type LabelType = T;
+
     /// Train the classifier with examples and their labels. A KNN classifier
     /// doesn't actually do anything in the training phase, which is why it has
     /// been called a "lazy learner".
-    pub fn fit(&mut self, data: Vec<Vec<f64>>, labels: Vec<T>) {
+    fn fit(&mut self, data: Vec<Vec<f64>>, labels: Vec<T>) {
         self.data = Some(data);
         self.labels = Some(labels);
     }
-    
+
     /// Predict the labels of datapoints. Return None if `predict()` is
     /// called before `fit()`.
-    pub fn predict(&self, data: &Vec<Vec<f64>>) -> Option<Vec<T>> {
+    fn predict(&self, data: &Vec<Vec<f64>>) -> Option<Vec<T>> {
         if self.data.is_none() {
             return None;
         }
@@ -34,10 +40,10 @@ impl<T: Hash + Eq + Clone> KNNClassifier<T> {
         }
         Some(ret)
     }
-    
+
     /// Predict the label for one datapoint. Return None if `predict_one()`
     /// is called before `fit()`.
-    pub fn predict_one(&self, x: &Vec<f64>) -> Option<T> {
+    fn predict_one(&self, x: &Vec<f64>) -> Option<T> {
         match self.data {
             Some(ref data) => {
                 // Store the indices of the k nearest neighours so far.
@@ -77,6 +83,7 @@ impl<T: Hash + Eq + Clone> KNNClassifier<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::Classifier;
 
     #[test]
     fn test_creation() {
@@ -87,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_fit() {
-        let mut clf = KNNClassifier::new(3);
+        let mut clf: KNNClassifier<String> = KNNClassifier::new(3);
 
         let train: Vec<Vec<f64>> = vec![
             vec![0.0, 1.0, 2.0, 2.0, 3.0],
